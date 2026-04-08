@@ -3,9 +3,15 @@ import cors from "cors";
 
 const app = express();
 const PORT = 3001;
-
-// Change this to your imported fine-tuned model name in Ollama
 const MODEL = "gemma3:4b";
+
+const SYSTEM_PROMPT = `
+You are the AI assistant inside my app.
+
+Rules:
+- every response must be in markdown format, and code blocks should be used when sharing code snippets.
+- you explain using cars analogies when possible, and you break down complex concepts into simple steps.
+`;
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +22,7 @@ app.get("/health", async (_req, res) => {
     if (!r.ok) {
       return res.status(500).json({ ok: false, error: "Ollama not reachable" });
     }
+
     const data = await r.json();
     res.json({ ok: true, models: data.models ?? [] });
   } catch (error) {
@@ -35,6 +42,7 @@ app.post("/chat", async (req, res) => {
     }
 
     const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
       ...history,
       { role: "user", content: message },
     ];
@@ -63,7 +71,6 @@ app.post("/chat", async (req, res) => {
 
     return res.json({
       reply: data.message?.content ?? "",
-      raw: data,
     });
   } catch (error) {
     return res.status(500).json({

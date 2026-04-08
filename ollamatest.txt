@@ -1,0 +1,7 @@
+curl http://localhost:11434/api/chat -d '{
+  "model": "gemma3:4b",
+  "messages": [
+    { "role": "user", "content": "who is Isaac Newton in one sentence?" }
+  ],
+  "stream": true
+}'

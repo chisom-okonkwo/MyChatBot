@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ollama Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    h1 {
+      margin-bottom: 12px;
+    }
+    #chat {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 300px;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+    }
+    .msg {
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .user {
+      background: #f2f2f2;
+    }
+    .assistant {
+      background: #e8f4ff;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chat with Ollama</h1>
+  <div id="chat"></div>
+
+  <div class="row">
+    <input id="messageInput" type="text" placeholder="Type a message..." />
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    const chatEl = document.getElementById("chat");
+    const inputEl = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    const history = [];
+
+    function addMessage(role, content) {
+      const div = document.createElement("div");
+      div.className = `msg ${role}`;
+      div.textContent = `${role === "user" ? "You" : "Model"}: ${content}`;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const message = inputEl.value.trim();
+      if (!message) return;
+
+      addMessage("user", message);
+      history.push({ role: "user", content: message });
+      inputEl.value = "";
+      sendBtn.disabled = true;
+
+      try {
+        const response = await fetch("http://localhost:3001/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            history: history.slice(0, -1),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.details || data.error || "Request failed");
+        }
+
+        const reply = data.reply || "";
+        addMessage("assistant", reply);
+        history.push({ role: "assistant", content: reply });
+      } catch (error) {
+        addMessage("assistant", `Error: ${error.message}`);
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
